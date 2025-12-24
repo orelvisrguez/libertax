@@ -1,0 +1,7 @@
+{
+  "name": "LibertaX: Batalla Cultural AI",
+  "description": "Agente experto en combate dialéctico y defensa de la libertad para X.com.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
