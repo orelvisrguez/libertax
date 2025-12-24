@@ -2,15 +2,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { ResponseTone, LibertarianPersona, GroundingSource, Fallacy } from "../types";
 
-// Ayudante para acceder a variables de entorno de forma segura en el navegador
-const getSafeEnv = (key: string): string => {
-  try {
-    return (typeof process !== 'undefined' && process.env && process.env[key]) || '';
-  } catch (e) {
-    return '';
-  }
-};
-
 const SYSTEM_INSTRUCTION = `
 You are "LibertaX Response Expert", the world's leading tactical agent for the "Batalla Cultural". 
 Your core is built on Austrian Economics, Natural Rights, and Individual Liberty.
@@ -38,10 +29,8 @@ export const generateResponse = async (
   fallacies: Fallacy[], 
   collectivismScore: number 
 }> => {
-  const apiKey = getSafeEnv('API_KEY');
-  if (!apiKey) throw new Error("API_KEY no configurada en el servidor.");
-  
-  const ai = new GoogleGenAI({ apiKey });
+  // Fix: Initialize GoogleGenAI with API key directly from process.env as per guidelines.
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
   
   const parts: any[] = [];
   if (image) {
@@ -92,6 +81,7 @@ Return a JSON object with response in Spanish, memeCaption in English, fallacies
       }
     });
 
+    // Fix: Access .text property directly (not as a function).
     const data = JSON.parse(response.text || "{}");
     const sources: GroundingSource[] = [];
     const groundingMetadata = response.candidates?.[0]?.groundingMetadata;
@@ -109,21 +99,25 @@ Return a JSON object with response in Spanish, memeCaption in English, fallacies
       collectivismScore: data.collectivismScore || 50
     };
   } catch (error: any) {
+    console.error("Gemini API Error:", error);
     throw new Error("Falla en la matriz de combate IA: " + error.message);
   }
 };
 
 export const generateImagenImage = async (memeCaption: string): Promise<string> => {
-  const apiKey = getSafeEnv('API_KEY');
-  const ai = new GoogleGenAI({ apiKey });
+  // Fix: Initialize GoogleGenAI with API key directly from process.env as per guidelines.
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
   try {
     const response = await ai.models.generateImages({
       model: 'imagen-4.0-generate-001',
-      prompt: `A political meme with text: "${memeCaption}". Mocking state bureaucracy, vibrant colors.`,
+      prompt: `A political meme with text: "${memeCaption}". Mocking state bureaucracy, high quality, vibrant.`,
       config: { numberOfImages: 1, outputMimeType: 'image/jpeg', aspectRatio: '1:1' },
     });
-    return `data:image/jpeg;base64,${response.generatedImages[0].image.imageBytes}`;
+    // Fix: Correct extraction of image bytes from generateImages response.
+    const base64EncodeString: string = response.generatedImages[0].image.imageBytes;
+    return `data:image/jpeg;base64,${base64EncodeString}`;
   } catch (error) {
+    console.error("Imagen API Error:", error);
     throw new Error("Error en generador de memes.");
   }
 };
