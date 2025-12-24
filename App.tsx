@@ -12,9 +12,10 @@ import { toPng } from 'html-to-image';
 import { ResponseTone, PostResponse, LibertarianPersona } from './types';
 import { generateResponse, generateImagenImage } from './services/geminiService';
 
-// Credenciales del proyecto Supabase proporcionadas
-const SUPABASE_URL = 'https://vqgfqofrnymvxnhggggt.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_utCEom6kAlJVyTaS3IvtJg_gXnhlMwd'; 
+// Variables de entorno para Vercel o entorno local
+// Si no están definidas, usará las del proyecto actual como fallback seguro
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://vqgfqofrnymvxnhggggt.supabase.co';
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || 'sb_publishable_utCEom6kAlJVyTaS3IvtJg_gXnhlMwd'; 
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -272,11 +273,18 @@ const App: React.FC = () => {
       {/* Main Command Area */}
       <main className="flex-1 max-w-4xl mx-auto w-full p-4 lg:p-10 space-y-12">
         
+        {/* Environment Alert */}
+        {(!process.env.API_KEY || !process.env.SUPABASE_URL) && (
+          <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-amber-500 text-[10px] font-black uppercase flex items-center gap-3">
+            <ShieldAlert className="w-4 h-4" /> 
+            Modo Local Detectado: Asegúrate de configurar las variables de entorno en Vercel.
+          </div>
+        )}
+
         {/* Input Card */}
         <section className={`rounded-[2.5rem] border p-1 shadow-2xl relative z-10 ${isDarkMode ? 'bg-slate-900/60 border-slate-800/50' : 'bg-white border-slate-200'}`}>
           <div className={`p-8 lg:p-12 rounded-[2.3rem] ${isDarkMode ? 'bg-[#0f172a]/50' : 'bg-slate-50/50'}`}>
             <form onSubmit={handleSubmit} className="space-y-8">
-              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-3">
                   <label className="text-[11px] font-black uppercase tracking-widest text-blue-500 flex items-center gap-2"><Target className="w-3.5 h-3.5" /> Objetivo en X</label>
@@ -349,10 +357,8 @@ const App: React.FC = () => {
             return (
               <div key={r.id} className={`border rounded-[3rem] overflow-hidden relative shadow-2xl animate-in fade-in slide-in-from-bottom-5 duration-500 ${isDarkMode ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-200'}`}>
                 
-                {/* Visual Capture Card */}
                 <div ref={el => responseRefs.current[r.id] = el} className={`p-10 lg:p-14 space-y-10 relative overflow-hidden ${isDarkMode ? 'bg-[#0b1120]' : 'bg-slate-50'}`}>
                   <div className={`absolute top-0 left-0 w-full h-2 bg-gradient-to-r ${style.color}`} />
-                  
                   <div className="flex justify-between items-start flex-wrap gap-6">
                     <div className="flex gap-4">
                       <div className={`p-5 rounded-2xl ${style.bg} ${style.text} shadow-inner`}>{style.icon}</div>
@@ -372,43 +378,36 @@ const App: React.FC = () => {
                       <span className="text-[10px] font-black opacity-60 tracking-wider">{r.collectivism_score}% Estatismo</span>
                     </div>
                   </div>
-
                   <div className={`text-3xl lg:text-5xl font-black leading-tight tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
                     {r.generated_content}
                   </div>
-                  
                   <div className="pt-8 flex items-center justify-between opacity-30 border-t border-white/5">
                      <div className="flex items-center gap-3">
                         <Twitter className="w-4 h-4" />
                         <span className="text-[11px] font-black uppercase tracking-[0.4em]">Liberta<span className="text-blue-500">X</span> AI</span>
                      </div>
-                     <span className="text-[10px] font-bold uppercase">{new Date(r.created_at || r.timestamp).toLocaleDateString()} • PERSISTIDO EN DB</span>
+                     <span className="text-[10px] font-bold uppercase">{new Date(r.created_at || r.timestamp).toLocaleDateString()}</span>
                   </div>
                 </div>
 
-                {/* Actions */}
                 <div className={`p-10 border-t ${isDarkMode ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-200'}`}>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <button onClick={() => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent('@' + r.username + ' ' + r.generated_content)}`)} className="bg-blue-600 text-white py-4 rounded-2xl font-black text-xs flex items-center justify-center gap-3 hover:bg-blue-500 transition-all">
                       <Twitter className="w-4 h-4" /> PUBLICAR
                     </button>
-                    
                     <button onClick={() => downloadCard(r.id)} disabled={isCapturingId === r.id} className="bg-slate-800 text-slate-300 py-4 rounded-2xl font-black text-xs flex items-center justify-center gap-3 border border-slate-700 hover:border-blue-500 transition-all">
                       {isCapturingId === r.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />} CAPTURA
                     </button>
-
                     <button onClick={() => { navigator.clipboard.writeText(r.generated_content); setCopiedId(r.id); setTimeout(() => setCopiedId(null), 2000); }} 
                       className={`py-4 rounded-2xl text-[10px] font-black border transition-all flex items-center justify-center gap-2 ${copiedId === r.id ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-300'}`}>
                       {copiedId === r.id ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />} {copiedId === r.id ? 'COPIADO' : 'COPIAR'}
                     </button>
-
                     <button onClick={() => handleGenerateMeme(r.id, r.meme_caption || r.generated_content)} 
                       disabled={isGeneratingMeme === r.id || !!r.generated_image_url}
                       className="py-4 rounded-2xl text-[10px] font-black border-2 border-purple-500/20 bg-purple-500/10 text-purple-400 flex items-center justify-center gap-3 transition-all hover:bg-purple-500/20">
                       {isGeneratingMeme === r.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />} {r.generated_image_url ? 'MEME LISTO' : 'GENERAR MEME'}
                     </button>
                   </div>
-
                   {r.generated_image_url && (
                     <div className="mt-8 rounded-[2rem] overflow-hidden border-4 border-purple-500/10 shadow-2xl group relative animate-in zoom-in duration-700">
                       <img src={r.generated_image_url} className="w-full h-auto" alt="Meme táctico" />
@@ -424,10 +423,9 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      {/* Footer for Mobile Branding */}
       <footer className="lg:hidden p-8 text-center opacity-30 border-t border-white/5">
         <h2 className="text-xl font-black tracking-tighter">Liberta<span className="text-blue-500">X</span></h2>
-        <p className="text-[8px] font-black uppercase tracking-[0.3em] mt-1">Conectado a Supabase v2</p>
+        <p className="text-[8px] font-black uppercase tracking-[0.3em] mt-1">Ready for Vercel Deployment</p>
       </footer>
 
       <style>{`
