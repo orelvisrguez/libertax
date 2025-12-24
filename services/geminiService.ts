@@ -2,6 +2,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { ResponseTone, LibertarianPersona, GroundingSource, Fallacy } from "../types";
 
+// Always use process.env.API_KEY directly as per guidelines
 const SYSTEM_INSTRUCTION = `
 You are "LibertaX Response Expert", the world's leading tactical agent for the "Batalla Cultural". 
 Your core is built on Austrian Economics, Natural Rights, and Individual Liberty.
@@ -29,8 +30,14 @@ export const generateResponse = async (
   fallacies: Fallacy[], 
   collectivismScore: number 
 }> => {
-  // Fix: Initialize GoogleGenAI with API key directly from process.env as per guidelines.
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+  // Use process.env.API_KEY directly as per guidelines
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+    throw new Error("API_KEY no detectada.");
+  }
+  
+  // Create instance right before making an API call to ensure it uses the most up-to-date API key
+  const ai = new GoogleGenAI({ apiKey });
   
   const parts: any[] = [];
   if (image) {
@@ -81,7 +88,6 @@ Return a JSON object with response in Spanish, memeCaption in English, fallacies
       }
     });
 
-    // Fix: Access .text property directly (not as a function).
     const data = JSON.parse(response.text || "{}");
     const sources: GroundingSource[] = [];
     const groundingMetadata = response.candidates?.[0]?.groundingMetadata;
@@ -105,15 +111,19 @@ Return a JSON object with response in Spanish, memeCaption in English, fallacies
 };
 
 export const generateImagenImage = async (memeCaption: string): Promise<string> => {
-  // Fix: Initialize GoogleGenAI with API key directly from process.env as per guidelines.
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+  // Use process.env.API_KEY directly as per guidelines
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+    throw new Error("API_KEY no detectada.");
+  }
+  
+  const ai = new GoogleGenAI({ apiKey });
   try {
     const response = await ai.models.generateImages({
       model: 'imagen-4.0-generate-001',
       prompt: `A political meme with text: "${memeCaption}". Mocking state bureaucracy, high quality, vibrant.`,
       config: { numberOfImages: 1, outputMimeType: 'image/jpeg', aspectRatio: '1:1' },
     });
-    // Fix: Correct extraction of image bytes from generateImages response.
     const base64EncodeString: string = response.generatedImages[0].image.imageBytes;
     return `data:image/jpeg;base64,${base64EncodeString}`;
   } catch (error) {
